@@ -29,7 +29,7 @@ Q2HX711 MPS20N0040D2(OUT_press2, SCK_press2); // start comm with the HX710B
 */
 
 //THIS IS IN GRAMS RN
-const float conversion_factor = 203.8951801; //GRAMS //The factor to convert voltage to force based on experimental data ( = mean_data_for_known_weight / actual weight) 
+const float conversion_factor = 203.8951801; //GRAMS /The factor to convert voltage to force based on experimental data ( = mean_data_for_known_weight / actual weight) 
 
 unsigned long start_time = 0;
 unsigned long end_time = 0;
@@ -54,7 +54,7 @@ void setup() {
   if(SD.exists("data.csv")) SD.remove("data.csv"); //clear previous file
   data_file = SD.open("data.csv",FILE_WRITE);  // open file
   if(data_file){  //  if file created, set up header
-    data_file.println("Time (ms),Grams (g), Pressure (PSI), Temperature(C)"); //change after finding conversion
+    data_file.println("Time (ms),Grams (g),Pressure (PSI),Temperature(C)"); //change after finding conversion
   }
   else{
     Serial.println("Error: File cannot be opened.");
@@ -89,7 +89,7 @@ void loop() {
   uint16_t raw_temperature = 0;
   
   raw_data_PX4(raw_pressure, raw_temperature); //STILL NEED TO CONVERT
-  float pressure_psi = (raw_pressure - 16383.1)*2/(16383*.8)+1.25; // conversion is in PSI, accuracy is ±0.25%
+  float pressure_psi = (raw_pressure - 1638)/(13107); // conversion is in PSI, accuracy is ±0.25%
   float temp_C = raw_temperature*200.0/2047.0-50;
 
   //  Read data from strain gauge at this time
@@ -107,16 +107,16 @@ void loop() {
   */
 
   //write data
-  if(!raw_pressure == 0){
-    String data_string = String(elapsed_time) + "," + String(data) + "," + String(pressure_psi)+","+ String(temp_C);
-    data_file.println(data_string);
+  if(!(raw_pressure == 0)){
+    char data_string[64];
+    sprintf(data_string, "%lu,%.3f,%.4f,%.2f", elapsed_time, data, pressure_psi, temp_C);
     Serial.println(data_string);
+    data_file.println(data_string);
   }
   
 
-
   //break condition
-  if(elapsed_time >= 10000){ // change later
+  if(elapsed_time >= 100000){ // change later
     data_file.close(); // saves to file
     Serial.println("Recording Ended.");
     while(true);
